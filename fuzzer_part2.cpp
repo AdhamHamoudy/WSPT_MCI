@@ -336,7 +336,7 @@ int main(int argc, char* argv[]) {
     }
 
     cout << "\nFor reproducibility, rerun with:\n";
-    cout << "./fuzzer " << iterations << ' ' << seed << '\n';
+    cout << "./fuzzer_part2 " << iterations << ' ' << seed << '\n';
 
     return 0;
 }

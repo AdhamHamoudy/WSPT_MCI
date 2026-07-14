@@ -2,97 +2,94 @@
 # Compiler settings
 # ============================================================
 
-CXX = g++
-CXXFLAGS = -O3 -Wall -Wextra -std=c++17
+CXX := g++
+CXXFLAGS := -O3 -Wall -Wextra -std=c++17
 
 
 # ============================================================
-# Executable targets
+# Executables grouped by project part
 # ============================================================
 
-TARGET1 = brute-force
-TARGET2 = unoptimized_wspt
-TARGET3 = WSPT-MCI
-TARGET4 = dp_with_budget
-TARGET5 = fuzzer
-TARGET6 = naive_with_budget
+PART1_TARGETS := WSPT-MCI unoptimized_wspt brute-force fuzzer_part1
+PART2_TARGETS := dp_with_budget naive_with_budget fuzzer_part2
+ALL_TARGETS := $(PART1_TARGETS) $(PART2_TARGETS)
 
 
 # ============================================================
-# Source files
-# ============================================================
-
-SRC1 = brute-force.cpp
-SRC2 = unoptimized_wspt.cpp
-SRC3 = WSPT-MCI.cpp
-SRC4 = dp_with_budget.cpp
-SRC5 = fuzzer.cpp
-SRC6 = naive_with_budget.cpp
-
-
-# ============================================================
-# Fuzzer settings
+# Benchmark defaults
 #
 # Examples:
-#   make benchmark
-#   make benchmark ITERATIONS=5000
-#   make benchmark ITERATIONS=1000 SEED=1783029008571364603
+#   make benchmark-part1
+#   make benchmark-part1 ITERATIONS=1000 SEED=1783029008571364603 MAX_JOBS=11
+#   make benchmark-part2 ITERATIONS=1000 SEED=1783029008571364603
 # ============================================================
 
 ITERATIONS ?= 1000
-SEED ?=
+SEED ?= 1783029008571364603
+MAX_JOBS ?= 11
 
 
 # ============================================================
-# Default target
+# Default build
 # ============================================================
 
-all: $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5) $(TARGET6)
+all: $(ALL_TARGETS)
 
 
 # ============================================================
-# Build rules
+# Part I build rules
 # ============================================================
 
-$(TARGET1): $(SRC1)
+WSPT-MCI: WSPT-MCI.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-$(TARGET2): $(SRC2)
+unoptimized_wspt: unoptimized_wspt.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-$(TARGET3): $(SRC3)
+brute-force: brute-force.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-$(TARGET4): $(SRC4)
-	$(CXX) $(CXXFLAGS) -o $@ $<
-
-$(TARGET5): $(SRC5)
-	$(CXX) $(CXXFLAGS) -o $@ $<
-
-$(TARGET6): $(SRC6)
+fuzzer_part1: fuzzer_part1.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
 
 # ============================================================
-# Run the timed fuzzer
+# Part II build rules
 # ============================================================
 
-benchmark: $(TARGET5)
-	@if [ -n "$(SEED)" ]; then \
-		time ./$(TARGET5) $(ITERATIONS) $(SEED); \
-	else \
-		time ./$(TARGET5) $(ITERATIONS); \
-	fi
+dp_with_budget: dp_with_budget.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+naive_with_budget: naive_with_budget.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+fuzzer_part2: fuzzer_part2.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
 
 
-# Run only the exact DP solver
-run-dp: $(TARGET4)
-	./$(TARGET4)
+# ============================================================
+# Run individual solvers
+# ============================================================
+
+run-part1: WSPT-MCI
+	./WSPT-MCI
+
+run-dp: dp_with_budget
+	./dp_with_budget
+
+run-naive-budget: naive_with_budget
+	./naive_with_budget
 
 
-# Run the naive budget solver
-run-naive-budget: $(TARGET6)
-	./$(TARGET6)
+# ============================================================
+# Randomized differential benchmarks
+# ============================================================
+
+benchmark-part1: fuzzer_part1
+	./fuzzer_part1 $(ITERATIONS) $(SEED) $(MAX_JOBS)
+
+benchmark-part2: fuzzer_part2
+	./fuzzer_part2 $(ITERATIONS) $(SEED)
 
 
 # ============================================================
@@ -100,7 +97,10 @@ run-naive-budget: $(TARGET6)
 # ============================================================
 
 clean:
-	rm -f $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5) $(TARGET6)
+	rm -f $(ALL_TARGETS)
 
 
-.PHONY: all benchmark run-dp run-naive-budget clean
+.PHONY: all \
+	run-part1 run-dp run-naive-budget \
+	benchmark-part1 benchmark-part2 \
+	clean
